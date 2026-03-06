@@ -1,4 +1,4 @@
-# 🤟 [LibrasQuest]
+# 🤟 LibrasQuest
 
 > **Uma plataforma interativa e gamificada para o aprendizado da Língua Brasileira de Sinais (Libras), movida a Visão Computacional.**
 
