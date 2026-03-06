@@ -43,3 +43,11 @@ Since the project is 100% containerized, the initial setup is extremely simple.
    ```bash
    git clone [https://github.com/your-organization/LibrasQuest.git](https://github.com/your-organization/LibrasQuest.git)
    cd LibrasQuest
+
+2. Start the infraestructure using docker:
+   ```bash
+   docker-compose up --build
+
+3. Access the application:
+   Frontend (Game): http://localhost:3000 
+   Python API Documentation: http://localhost:8000/docs
