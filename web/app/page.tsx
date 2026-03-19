@@ -1,6 +1,7 @@
 import Header from "./components/Header";
 import Hero from "./components/Hero";
 import Features from "./components/Features";
+import Footer from "./components/Footer";
 
 /**
  * Página Inicial (Home)
@@ -17,6 +18,9 @@ export default function Home() {
       
       {/* Seção de funcionalidades detalhadas da plataforma */}
       <Features />
+
+      {/* Seção de rodapé com informações de contato e direitos autorais */}
+      <Footer />
     </main>
   );
 }
