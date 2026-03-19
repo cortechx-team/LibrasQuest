@@ -22,12 +22,15 @@ CREATE TABLE IF NOT EXISTS user_progress (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL,
     word_id INTEGER NOT NULL,
-    score INTEGER DEFAULT 0,
-    lives_lost INTEGER DEFAULT 0,
+    score INTEGER DEFAULT 0 CHECK (score >= 0),
+    lives_lost INTEGER DEFAULT 0 CHECK (lives_lost >= 0),
     last_interaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
+
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (word_id) REFERENCES dictionary_words(id) ON DELETE CASCADE,
-    
+    FOREIGN KEY (word_id) REFERENCES dictionary_words(id) ON DELETE RESTRICT,
+
     UNIQUE (user_id, word_id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_user_progress_user_id ON learning.user_progress(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_progress_word_id ON learning.user_progress(word_id);
