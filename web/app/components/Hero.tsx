@@ -1,4 +1,6 @@
-import Link from 'next/link';
+'use client';
+
+import { useCameraPermission } from '../hooks/useCameraPermission';
 
 /**
  * Componente Hero
@@ -6,6 +8,24 @@ import Link from 'next/link';
  * Apresenta o título em pixel art e um "Call to Action" (Chamada para Ação).
  */
 export default function Hero() {
+  const { status, isLoading, error, requestPermission } = useCameraPermission();
+
+  const handleCameraTest = async () => {
+    await requestPermission();
+
+    // Tratar o resultado após a requisição
+    if (status === 'granted') {
+      alert('Permissão concedida! Você pode começar a usar a câmera');
+      // TODO: Navegar para a página de teste da câmera
+    } else if (status === 'denied') {
+      alert('Permissão negada. Para usar o LibrasQuest, você precisa permitir o acesso à câmera');
+    } else if (status === 'unsupported') {
+      alert('Seu navegador não suporta acesso à câmera ou nenhuma câmera foi encontrada');
+    } else if (status === 'error') {
+      alert(`Ocorreu um erro ao acessar a câmera: ${error || 'Tente novamente'}`);
+    }
+  };
+
   return (
     <section className="relative h-screen flex flex-col items-center justify-center text-center px-5 bg-gradient-to-b from-[#0f0c29] via-[#302b63] to-[#24243e]">
       
@@ -26,12 +46,13 @@ export default function Hero() {
 
       {/* Botões de Ação */}
       <div className="flex z-10">
-        <Link 
-          href="#" 
-          className="bg-primary-cyan text-black px-8 py-3 rounded-full font-bold hover:bg-opacity-80 transition-all shadow-lg hover:shadow-primary-cyan/50 hover:-translate-y-1"
+        <button 
+          onClick={handleCameraTest}
+          disabled={isLoading}
+          className="bg-primary-cyan text-black px-8 py-3 rounded-full font-bold hover:bg-opacity-80 transition-all shadow-lg hover:shadow-primary-cyan/50 hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Teste Sua Câmera Para Começar.
-        </Link>
+          {isLoading ? 'Aguardando câmera...' : 'Teste sua câmera para começar'}
+        </button>
       </div>
 
     </section>
