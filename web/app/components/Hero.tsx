@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { useCameraPermission } from '../hooks/useCameraPermission';
 
 /**
@@ -8,26 +9,40 @@ import { useCameraPermission } from '../hooks/useCameraPermission';
  * Apresenta o título em pixel art e um "Call to Action" (Chamada para Ação).
  */
 export default function Hero() {
-  const { status, isLoading, error, requestPermission } = useCameraPermission();
+  const { status, isLoading, error, stream, requestPermission, stopCameraTest } = useCameraPermission();
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    if (!videoRef.current) {
+      return;
+    }
+
+    if (stream) {
+      videoRef.current.srcObject = stream;
+      void videoRef.current.play().catch(() => {
+        // Alguns navegadores podem bloquear autoplay mesmo com muted.
+      });
+      return;
+    }
+
+    videoRef.current.srcObject = null;
+  }, [stream]);
 
   const handleCameraTest = async () => {
-    await requestPermission();
+    const result = await requestPermission();
 
     // Tratar o resultado após a requisição
-    if (status === 'granted') {
-      alert('Permissão concedida! Você pode começar a usar a câmera');
-      // TODO: Navegar para a página de teste da câmera
-    } else if (status === 'denied') {
+    if (result === 'denied') {
       alert('Permissão negada. Para usar o LibrasQuest, você precisa permitir o acesso à câmera');
-    } else if (status === 'unsupported') {
+    } else if (result === 'unsupported') {
       alert('Seu navegador não suporta acesso à câmera ou nenhuma câmera foi encontrada');
-    } else if (status === 'error') {
+    } else if (result === 'error') {
       alert(`Ocorreu um erro ao acessar a câmera: ${error || 'Tente novamente'}`);
     }
   };
 
   return (
-    <section className="relative h-screen flex flex-col items-center justify-center text-center px-5 bg-gradient-to-b from-[#0f0c29] via-[#302b63] to-[#24243e]">
+    <section className="relative min-h-screen flex flex-col items-center justify-center px-5 py-24 text-center bg-gradient-to-b from-[#0f0c29] via-[#302b63] to-[#24243e]">
       
       {/* Título Principal Estilo Pixel Art e Efeitos */}
       <div className="pixel-title text-primary-cyan text-4xl sm:text-5xl md:text-6xl mb-25 z-10">
@@ -45,7 +60,7 @@ export default function Hero() {
       </p>
 
       {/* Botões de Ação */}
-      <div className="flex z-10">
+      <div className="flex flex-col items-center z-10 w-full">
         <button 
           onClick={handleCameraTest}
           disabled={isLoading}
@@ -53,6 +68,28 @@ export default function Hero() {
         >
           {isLoading ? 'Aguardando câmera...' : 'Teste sua câmera para começar'}
         </button>
+
+        {status === 'granted' && stream && (
+          <>
+            <div className="mt-5 w-full max-w-sm rounded-2xl border border-primary-cyan/60 bg-black/40 p-3 shadow-lg">
+              <p className="mb-2 text-sm text-primary-cyan">Pré-visualização da câmera</p>
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="h-48 w-full rounded-lg object-cover"
+              />
+            </div>
+
+            <button
+              onClick={stopCameraTest}
+              className="mt-3 w-full max-w-sm rounded-full border border-primary-cyan px-6 py-2 font-semibold text-primary-cyan transition-colors hover:bg-primary-cyan hover:text-black"
+            >
+              Interromper teste
+            </button>
+          </>
+        )}
       </div>
 
     </section>
