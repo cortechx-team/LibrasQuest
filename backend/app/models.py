@@ -1,8 +1,8 @@
 from sqlalchemy import (
-    Column, Integer, String, Text, TIMESTAMP, CheckConstraint,
+    Column, Integer, SmallInteger, String, Text, TIMESTAMP, CheckConstraint,
     UniqueConstraint, ForeignKey, Index, func
 )
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, relationship
 
 
 class Base(DeclarativeBase):
@@ -20,16 +20,29 @@ class User(Base):
     created_at = Column(TIMESTAMP, server_default=func.now())
 
 
+class WordImage(Base):
+    __tablename__ = "word_images"
+    __table_args__ = (
+        Index("idx_word_images_word_id", "word_id"),
+        {"schema": "learning"},
+    )
+
+    id = Column(Integer, primary_key=True)
+    word_id = Column(Integer, ForeignKey("learning.dictionary_words.id", ondelete="CASCADE"), nullable=False)
+    image_url = Column(Text, nullable=False)
+    position = Column(SmallInteger)
+    created_at = Column(TIMESTAMP, server_default=func.now())
+
+
 class DictionaryWord(Base):
     __tablename__ = "dictionary_words"
     __table_args__ = {"schema": "learning"}
 
     id = Column(Integer, primary_key=True)
     word = Column(String(255), nullable=False, unique=True)
-    hint_image_url_1 = Column(Text)
-    hint_image_url_2 = Column(Text)
-    hint_image_url_3 = Column(Text)
     created_at = Column(TIMESTAMP, server_default=func.now())
+
+    images = relationship("WordImage", backref="word", cascade="all, delete-orphan", order_by="WordImage.position")
 
 
 class UserProgress(Base):
