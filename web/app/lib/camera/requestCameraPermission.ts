@@ -46,6 +46,13 @@ export async function requestCameraPermission(): Promise<CameraPermissionResult>
           stream: null,
         }; // Câmera não encontrada
       }
+
+      if (error.name === 'NotReadableError') {
+        return {
+          status: 'error', 
+          stream: null,
+        }; // Câmera está em uso por outro aplicativo ou não pode ser acessada
+      }
     }
 
     console.error('Erro ao solicitar permissão da câmera:', error);

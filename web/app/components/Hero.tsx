@@ -78,7 +78,7 @@ export default function Hero() {
                 autoPlay
                 playsInline
                 muted
-                className="h-48 w-full rounded-lg object-cover"
+                className="h-48 w-full rounded-lg object-cover scale-x-[-1]"
               />
             </div>
 
