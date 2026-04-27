@@ -1,0 +1,31 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+@import "tailwindcss";
+
+@theme inline {
+  --color-bg-dark: #0f0c29;
+  --color-primary-cyan: #42f5e3;
+  --color-text-white: #ffffff;
+  --color-accent-purple: #6a11cb;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--color-bg-dark);
+  color: var(--color-text-white);
+  overflow-x: hidden;
+}
+
+/* Título em Pixel Art estilo Retro */
+.pixel-title {
+  font-family: 'Press Start 2P', monospace;
+  text-shadow: 
+      3px 3px 0 #005cff,
+      -1px -1px 0 #005cff,  
+      1px -1px 0 #005cff,
+      -1px  1px 0 #005cff,
+      1px  1px 0 #005cff;
+  letter-spacing: 2px;
+}
