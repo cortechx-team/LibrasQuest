@@ -1,4 +1,6 @@
-FROM node:20-slim
+# Esperar luiz subir o frontend  pra atualizar de acordo
+# Por enquanto vou subir a imagem 18-alpine
+FROM node:18-alpine
 
 WORKDIR /app
 
@@ -7,6 +9,4 @@ RUN npm install
 
 COPY . .
 
-EXPOSE 3000
-
-CMD ["npm", "run", "dev", "--", "-p", "3000", "-H", "0.0.0.0"]
+CMD ["npm", "start"]
