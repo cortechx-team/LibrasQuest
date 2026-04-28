@@ -4,6 +4,7 @@ import cv2
 import mediapipe as mp
 import pandas as pd
 import numpy as np
+import time
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Ferramenta de Geração de Dataset para LibrasQuest")
@@ -15,6 +16,8 @@ def parse_args():
                         help="Label das imagens, se não forem separadas por pasta no modo 'images'.")
     parser.add_argument("--output", type=str, default="dataset.csv",
                         help="Nome do arquivo CSV de saída. Padrão: dataset.csv")
+    parser.add_argument("--delay", type=float, default=0.2,
+                        help="Atraso em segundos entre capturas no modo câmera. Padrão: 0.2 (5 frames/s).")
     return parser.parse_args()
 
 def normalize_landmarks(landmarks):
@@ -96,8 +99,10 @@ def run_camera_mode(args):
 
     recording = False
     data_buffer = []
+    last_capture_time = 0
 
     print(f"Letra '{current_label}' selecionada.")
+    print(f"Atraso de captura: {args.delay}s")
     print("Pressione 'r' para iniciar/parar a gravação.")
     print("Pressione 'n' para trocar a letra.")
 
@@ -111,8 +116,11 @@ def run_camera_mode(args):
         data_row, processed_frame = process_image(frame, mp_hands, hands)
         
         if recording and data_row:
-            row = [current_label] + data_row
-            data_buffer.append(row)
+            current_time = time.time()
+            if current_time - last_capture_time >= args.delay:
+                row = [current_label] + data_row
+                data_buffer.append(row)
+                last_capture_time = current_time
             
             cv2.circle(processed_frame, (30, 30), 10, (0, 0, 255), -1)
             cv2.putText(processed_frame, f"GRAVANDO: {current_label} ({len(data_buffer)})", 
