@@ -1,0 +1,15 @@
+venv/
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+
+# Logs
+*.log
+
+## dataset
+dataset.csv
