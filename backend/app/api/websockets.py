@@ -41,4 +41,4 @@ async def ws_predict(websocket: WebSocket) -> None:
     except WebSocketDisconnect:
         logger.info("Cliente desconectado de forma limpa: %s", client_id)
     except Exception as exc:
-        logger.error("Erro inesperado no fluxo do WebSocket (%s): %s", client_id, exc)
+        logger.error("Erro inesperado no ciclo de vida do WebSocket para o cliente %s: %s", client_id, exc)
