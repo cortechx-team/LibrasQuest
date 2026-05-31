@@ -7,7 +7,7 @@ import Image from "next/image";
 
 export default function Features() {
   return (
-    <section className="bg-white text-[#333] px-[10%] py-25 text-center">
+    <section id="sobre" className="bg-white text-[#333] px-[10%] py-25 text-center">
       {/* Título da Seção */}
       <h2 className="text-3xl md:text-5xl text-[#1a1a1a] font-bold mb-6">
         Aprendizado <span className="text-accent-purple">intuitivo</span> para todos
