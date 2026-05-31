@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useCameraPermission } from '../hooks/useCameraPermission';
 
 /**
@@ -10,7 +11,19 @@ import { useCameraPermission } from '../hooks/useCameraPermission';
  */
 export default function Hero() {
   const { status, isLoading, error, stream, requestPermission, stopCameraTest } = useCameraPermission();
+  const [isCameraConfirmed, setIsCameraConfirmed] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const didRedirectToGame = useRef(false);
+  const redirectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimeoutRef.current) {
+        clearTimeout(redirectTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!videoRef.current) {
@@ -28,7 +41,18 @@ export default function Hero() {
     videoRef.current.srcObject = null;
   }, [stream]);
 
+  const clearGameRedirect = () => {
+    if (redirectTimeoutRef.current) {
+      clearTimeout(redirectTimeoutRef.current);
+      redirectTimeoutRef.current = null;
+    }
+  };
+
   const handleCameraTest = async () => {
+    setIsCameraConfirmed(false);
+    didRedirectToGame.current = false;
+    clearGameRedirect();
+
     const result = await requestPermission();
 
     // Tratar o resultado após a requisição
@@ -39,6 +63,26 @@ export default function Hero() {
     } else if (result === 'error') {
       alert(`Ocorreu um erro ao acessar a câmera: ${error || 'Tente novamente'}`);
     }
+  };
+
+  const handleCameraReady = () => {
+    if (didRedirectToGame.current) {
+      return;
+    }
+
+    didRedirectToGame.current = true;
+    setIsCameraConfirmed(true);
+    sessionStorage.setItem('librasquest-camera-confirmed', 'true');
+    redirectTimeoutRef.current = setTimeout(() => {
+      router.push('/jogo');
+    }, 2000);
+  };
+
+  const handleStopCameraTest = () => {
+    setIsCameraConfirmed(false);
+    didRedirectToGame.current = false;
+    clearGameRedirect();
+    stopCameraTest();
   };
 
   return (
@@ -78,12 +122,18 @@ export default function Hero() {
                 autoPlay
                 playsInline
                 muted
+                onLoadedData={handleCameraReady}
                 className="h-48 w-full rounded-lg object-cover scale-x-[-1]"
               />
+              {isCameraConfirmed && (
+                <p className="mt-3 rounded-lg bg-primary-cyan/10 px-3 py-2 text-sm font-semibold text-primary-cyan">
+                  Imagem confirmada. Avançando em 2 segundos...
+                </p>
+              )}
             </div>
 
             <button
-              onClick={stopCameraTest}
+              onClick={handleStopCameraTest}
               className="mt-3 w-full max-w-sm rounded-full border border-primary-cyan px-6 py-2 font-semibold text-primary-cyan transition-colors hover:bg-primary-cyan hover:text-black"
             >
               Interromper teste
