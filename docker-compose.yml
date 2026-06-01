@@ -45,7 +45,7 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: ./web
     
     container_name: web_librasquest
     restart: always
@@ -57,9 +57,6 @@ services:
       - app-network
     depends_on:
       - backend
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules # Pra evitar sobrescrever 
   
 networks:
   app-network:
