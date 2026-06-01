@@ -21,8 +21,9 @@ The system was designed to offer an intuitive learning progression:
 The architecture was designed to ensure **low latency** in sign recognition, using a hybrid model (**client-side 3D landmarks extraction** + classic ML model) instead of heavy server-side image processing.
 
 ### Computer Vision & AI (Modeling): `Python`
-*   **MediaPipe:** Extraction of hand coordinates (21 points/landmarks).
-*   **Scikit-Learn:** Classifiers trained to identify the letters of the alphabet (**Random Forest**).
+*   **MediaPipe:** Extraction of hand coordinates (21 points generating 63 coordinate values).
+*   **Scikit-Learn:** Classifiers trained to identify 20 static classes of the Libras alphabet (**Random Forest**).
+    *   *Note: Letters with movement (H, J, X, Z) are excluded from the current static classifier scope.*
 *   **uv:** High-performance environment and dependency management.
 
 ### Backend (API): `FastAPI`
@@ -45,13 +46,31 @@ The architecture was designed to ensure **low latency** in sign recognition, usi
 
 ## 📂 Project Structure
 
-The repository is organized into independent modules:
+```text
+.
+├── .github/              # GitHub configuration (CODEOWNERS, PR templates)
+├── backend/             # FastAPI Backend (WebSockets, SQLAlchemy, Alembic)
+├── database/            # Database schema and architecture documentation
+├── dataset_tools/       # Scripts for data collection and landmark extraction
+├── frontend/            # Dockerized frontend environment (production build)
+├── model/               # Machine Learning module (Notebooks, Data, Models)
+│   ├── data/            # Raw and processed dataset storage
+│   └── notebooks/       # Training pipeline (Data Prep -> Model Training)
+├── web/                 # Main Frontend application (Next.js 16, React 19)
+├── .env.example         # Template for environment variables
+├── docker-compose.yml   # Orchestration for the entire ecosystem
+└── README.md            # Project documentation
+```
 
-*   [`backend/`](file:///c:/Users/Bárbara/Documents/CortechX/LibrasQuest/backend): FastAPI API, database models, and migration control.
-*   [`frontend/`](file:///c:/Users/Bárbara/Documents/CortechX/LibrasQuest/frontend): Next.js 16 frontend with UI, hooks, and browser-side landmark extraction.
-*   [`model/`](file:///c:/Users/Bárbara/Documents/CortechX/LibrasQuest/model): Training notebooks, data preparation pipelines, and exported models.
-*   [`dataset_tools/`](file:///c:/Users/Bárbara/Documents/CortechX/LibrasQuest/dataset_tools): Scripts for data collection and dataset engineering.
-*   [`database/`](file:///c:/Users/Bárbara/Documents/CortechX/LibrasQuest/database): Architecture documentation and schema definitions.
+---
+
+## 🤖 Modeling and Machine Learning
+
+The `/model` directory contains the core intelligence of LibrasQuest. To reproduce or improve the model:
+
+1.  **Data Collection:** Use [`dataset_tools/collect_data.py`](file:///c:/Users/Bárbara/Documents/CortechX/LibrasQuest/dataset_tools/collect_data.py) to capture hand landmarks via webcam.
+2.  **Preprocessing:** Run [`model/notebooks/data_prep.ipynb`](file:///c:/Users/Bárbara/Documents/CortechX/LibrasQuest/model/notebooks/data_prep.ipynb) to clean data and generate features (distances and directional differences).
+3.  **Training:** Execute [`model/notebooks/model.ipynb`](file:///c:/Users/Bárbara/Documents/CortechX/LibrasQuest/model/notebooks/model.ipynb) to train the Random Forest classifier and export the model.
 
 ---
 
@@ -72,14 +91,16 @@ Since the project is 100% containerized, the initial setup is extremely simple.
     cd LibrasQuest
     ```
 
-2.  **Configure environment variables:**
+2.  **Configure Environment Variables:**
+    Copy the example file and fill in the database credentials:
     ```bash
     cp .env.example .env
     ```
+    *Make sure the credentials in `.env` match the ones expected by the database service in `docker-compose.yml`.*
 
-3.  **Start the infrastructure using docker:**
+3.  **Start the entire ecosystem:**
     ```bash
-    docker-compose -f docker-composer.yml up --build
+    docker-compose up --build
     ```
 
 4.  **Access the application:**
