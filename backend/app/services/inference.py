@@ -91,7 +91,11 @@ class InferenceService:
             
         return coords.flatten().tolist()
 
-    def _build_feature_vector(self, coordinates: list[float]) -> np.ndarray:
+    def _build_feature_vector(
+        self,
+        coordinates: list[float],
+        provided_features: list[float] | None = None,
+    ) -> np.ndarray:
         norm_coords = self._normalize_spatial(coordinates)
         
         def get_pt(idx: int):
@@ -102,41 +106,48 @@ class InferenceService:
             return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2 + (p1[2] - p2[2])**2)
 
         features = list(norm_coords)
-        
-        pontas = [4, 8, 12, 16, 20]
-        for p in pontas:
-            features.append(calc_dist(p, 0))
-            
-        pares_juntas = [
-            (8, 12), (6, 10), (5, 9), (4, 20), (4, 8),
-            (4, 5), (4, 6), (4, 7), (4, 8), (8, 16), (12, 16)
-        ]
-        for a, b in pares_juntas:
-            features.append(calc_dist(a, b))
+
+        if provided_features is not None:
+            features.extend(provided_features)
+        else:
+            pontas = [4, 8, 12, 16, 20]
+            for p in pontas:
+                features.append(calc_dist(p, 0))
+
+            pares_juntas = [
+                (8, 12), (6, 10), (5, 9), (4, 20), (4, 8),
+                (4, 5), (4, 6), (4, 7), (4, 8), (8, 16), (12, 16)
+            ]
+            for a, b in pares_juntas:
+                features.append(calc_dist(a, b))
             
         raw_vector = np.array(features, dtype=np.float32).reshape(1, -1)
         
         scaled_vector = (raw_vector - self.means_vector) / self.stds_vector
         return scaled_vector
 
-    async def run_inference(self, coordinates: list[float]) -> PredictionResponse:
+    async def run_inference(
+        self,
+        coordinates: list[float],
+        features: list[float] | None = None,
+    ) -> PredictionResponse:
         if not self.classifier or self.means_vector is None:
             raise RuntimeError("O sistema de inferência ou os pesos não foram inicializados.")
         
-        features = self._build_feature_vector(coordinates)
+        feature_vector = self._build_feature_vector(coordinates, features)
         
         try:
-            prediction = self.classifier.predict(features)
+            prediction = self.classifier.predict(feature_vector)
             letter = str(prediction[0])
             
             if hasattr(self.classifier, "predict_proba"):
-                confidence = float(np.max(self.classifier.predict_proba(features)))
+                confidence = float(np.max(self.classifier.predict_proba(feature_vector)))
             else:
                 confidence = 1.0
                 
         except ValueError as e:
             logger.error("Erro de dimensionalidade nos dados enviados: %s", e)
-            raise ValueError(f"O formato do array ({features.shape}) é incompatível com o modelo.")
+            raise ValueError(f"O formato do array ({feature_vector.shape}) é incompatível com o modelo.")
             
         return PredictionResponse(letter=letter, confidence=round(confidence, 4))
 

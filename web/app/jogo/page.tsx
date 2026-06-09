@@ -4,11 +4,29 @@ import Link from 'next/link';
 import { useEffect, useRef } from 'react';
 import Header from '../components/Header';
 import { useCameraPermission } from '../hooks/useCameraPermission';
+import { useHandLandmarker } from '../hooks/useHandLandmarker';
+import { usePredictionSocket } from '../hooks/usePredictionSocket';
+import { drawHandLandmarks } from '../lib/mediapipe/handFeatures';
 
 export default function GameplayPage() {
   const { status, isLoading, error, stream, requestPermission } = useCameraPermission();
   const didRequestCamera = useRef(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const {
+    status: handTrackingStatus,
+    frameData,
+    error: handTrackingError,
+  } = useHandLandmarker({
+    videoRef,
+    enabled: Boolean(stream),
+  });
+  const {
+    status: predictionStatus,
+    prediction,
+    error: predictionError,
+    sendFrame,
+  } = usePredictionSocket(Boolean(stream));
 
   useEffect(() => {
     const confirmed = sessionStorage.getItem('librasquest-camera-confirmed') === 'true';
@@ -34,6 +52,30 @@ export default function GameplayPage() {
 
     videoRef.current.srcObject = null;
   }, [stream]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+
+    if (!canvas || !video) {
+      return;
+    }
+
+    if (video.videoWidth > 0 && video.videoHeight > 0) {
+      if (canvas.width !== video.videoWidth) {
+        canvas.width = video.videoWidth;
+      }
+      if (canvas.height !== video.videoHeight) {
+        canvas.height = video.videoHeight;
+      }
+    }
+
+    drawHandLandmarks(canvas, frameData?.landmarks ?? null);
+
+    if (frameData) {
+      sendFrame(frameData.payload);
+    }
+  }, [frameData, sendFrame]);
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#0f0c29] via-[#302b63] to-[#24243e] text-white">
@@ -68,13 +110,32 @@ export default function GameplayPage() {
 
           <div className="relative flex flex-1 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-black/60">
             {stream ? (
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="h-full min-h-[420px] w-full object-cover scale-x-[-1]"
-              />
+              <>
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="h-full min-h-[420px] w-full scale-x-[-1] object-cover"
+                />
+                <canvas
+                  ref={canvasRef}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+                />
+                <div className="absolute left-4 top-4 flex flex-wrap gap-2 text-xs font-semibold">
+                  <span className="rounded-full border border-white/15 bg-black/65 px-3 py-2">
+                    {handTrackingStatus === 'detecting'
+                      ? 'Mão detectada'
+                      : handTrackingStatus === 'loading'
+                        ? 'Carregando MediaPipe'
+                        : 'Mostre uma mão'}
+                  </span>
+                  <span className="rounded-full border border-white/15 bg-black/65 px-3 py-2">
+                    API: {predictionStatus === 'connected' ? 'conectada' : predictionStatus}
+                  </span>
+                </div>
+              </>
             ) : (
               <div className="px-6 text-center">
                 <p className="text-xl font-bold text-primary-cyan">
@@ -99,6 +160,12 @@ export default function GameplayPage() {
                 Não foi possível acessar a câmera. {error || 'Tente novamente.'}
               </p>
             )}
+
+            {(handTrackingError || predictionError) && (
+              <p className="absolute bottom-4 left-4 right-4 rounded-lg border border-amber-300/30 bg-amber-500/15 px-4 py-3 text-sm text-amber-50">
+                {handTrackingError || predictionError}
+              </p>
+            )}
           </div>
         </section>
 
@@ -114,8 +181,21 @@ export default function GameplayPage() {
               <p className="mt-1 text-3xl font-bold">0 dias</p>
             </div>
             <div className="rounded-xl bg-white/10 p-4">
-              <p className="text-sm text-white/65">Precisão</p>
-              <p className="mt-1 text-3xl font-bold">--</p>
+              <p className="text-sm text-white/65">Reconhecimento</p>
+              <p className="mt-1 text-3xl font-bold text-primary-cyan">
+                {prediction?.letter ?? '--'}
+              </p>
+              <p className="mt-2 text-sm text-white/65">
+                {prediction
+                  ? `${Math.round(prediction.confidence * 100)}% de confiança`
+                  : 'Aguardando sinal'}
+              </p>
+            </div>
+            <div className="rounded-xl bg-white/10 p-4">
+              <p className="text-sm text-white/65">Dados do frame</p>
+              <p className="mt-1 font-bold">
+                {frameData ? '63 coordenadas + 16 features' : 'Nenhuma mão detectada'}
+              </p>
             </div>
           </div>
         </aside>

@@ -43,7 +43,10 @@ async def ws_predict(websocket: WebSocket, token: str = Query(default=None)) -> 
                 continue
 
             try:
-                prediction = await inference_service.run_inference(payload.coordinates)
+                prediction = await inference_service.run_inference(
+                    payload.coordinates,
+                    payload.features,
+                )
                 await websocket.send_json(prediction.model_dump())
             except Exception as exc:
                 logger.error("Falha de inferência para o cliente %s: %s", client_id, exc)

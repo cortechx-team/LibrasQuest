@@ -48,7 +48,7 @@ backend/
 
 1. **Descentralização**: O backend não processa streaming de vídeo bruto. Ele consome exclusivamente vetores pré-computados contendo as coordenadas das articulações da mão.
 2. **Ciclo de Vida Otimizado (Lifespan)**: Tanto o arquivo `.pkl` quanto os pesos do CSV são carregados na memória RAM uma única vez durante o evento de *Startup* do servidor, mitigando latências decorrentes de operações repetitivas de Input/Output em disco.
-3. **Feature Engineering & Normalização**: O script `inference.py` recebe 63 coordenadas (21 landmarks × 3 dimensões), calcula dinamicamente 16 distâncias euclidianas estruturais adicionais e aplica instantaneamente a fórmula Z-Score (`(x - média) / desvio_padrão`) usando álgebra matricial do NumPy antes de invocar a predição.
+3. **Feature Engineering & Normalização**: O script `inference.py` recebe 63 coordenadas (21 landmarks × 3 dimensões) e 16 distâncias euclidianas estruturais calculadas no frontend. Para manter compatibilidade com clientes antigos, o backend calcula essas distâncias quando `features` não é enviado. Em seguida, aplica a fórmula Z-Score (`(x - média) / desvio_padrão`) usando álgebra matricial do NumPy antes de invocar a predição.
 4. **Silenciamento de I/O de Terminal**: Avisos gerados pela ausência de metadados nomeados no array NumPy são explicitamente filtrados no microsserviço de inferência para evitar gargalos de log no console ao operar em alta frequência de quadros.
 
 ## 📡 Protocolo do Canal de WebSocket (`/ws/predict`)
@@ -63,9 +63,16 @@ Envio contínuo a cada frame computado de um array puro encapsulado no formato J
 
 ```json
 {
-  "coordinates": [0.0, 0.0, 0.0, -0.232, -0.011, 0.004, ..., -0.614, -0.972, -0.226]
+  "coordinates": [0.0, 0.0, 0.0, -0.232, -0.011, 0.004, ..., -0.614, -0.972, -0.226],
+  "features": [0.706, 0.855, 0.790, ..., 0.246],
+  "handedness": "Right",
+  "timestamp_ms": 12345.67
 }
 ```
+
+`features` é opcional para compatibilidade. Quando presente, deve conter exatamente as 16
+distâncias na mesma ordem de `standardization_stats.csv`. O token JWT continua obrigatório
+na query string (`?token=<jwt>`).
 
 **Saída (Backend ➔ Frontend):**
 Resposta imediata contendo a caractere mapeado correspondente e o nível de confiança do classificador:
