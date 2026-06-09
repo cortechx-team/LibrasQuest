@@ -13,19 +13,9 @@ type Prediction = {
 function getPredictionSocketUrl(): string {
   const configuredUrl = process.env.NEXT_PUBLIC_PREDICTION_WS_URL;
   const defaultProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const url = new URL(
+  return new URL(
     configuredUrl ?? `${defaultProtocol}//${window.location.hostname}:8000/ws/predict`,
-  );
-  const token =
-    window.localStorage.getItem('librasquest-access-token') ??
-    window.localStorage.getItem('access_token') ??
-    process.env.NEXT_PUBLIC_PREDICTION_TOKEN;
-
-  if (token) {
-    url.searchParams.set('token', token);
-  }
-
-  return url.toString();
+  ).toString();
 }
 
 export function usePredictionSocket(enabled: boolean) {

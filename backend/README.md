@@ -71,8 +71,8 @@ Envio contínuo a cada frame computado de um array puro encapsulado no formato J
 ```
 
 `features` é opcional para compatibilidade. Quando presente, deve conter exatamente as 16
-distâncias na mesma ordem de `standardization_stats.csv`. O token JWT continua obrigatório
-na query string (`?token=<jwt>`).
+distâncias na mesma ordem de `standardization_stats.csv`. O canal de predição não exige
+autenticação; login será usado apenas por funcionalidades que precisem persistir progresso.
 
 **Saída (Backend ➔ Frontend):**
 Resposta imediata contendo a caractere mapeado correspondente e o nível de confiança do classificador:
