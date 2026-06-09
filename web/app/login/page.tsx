@@ -1,15 +1,53 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 import Header from '../components/Header';
+import { authenticate, saveAuthToken } from '../lib/auth';
 
 export default function LoginPage() {
+  const router = useRouter();
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setError(null);
+
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const name = String(data.get('name') ?? '').trim();
+    const email = String(data.get('email') ?? '').trim();
+    const password = String(data.get('password') ?? '');
+    const confirmPassword = String(data.get('confirmPassword') ?? '');
+
+    if (isRegistering && password !== confirmPassword) {
+      setError('As senhas não coincidem.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const token = await authenticate(isRegistering ? 'register' : 'login', {
+        ...(isRegistering ? { name } : {}),
+        email,
+        password,
+      });
+      saveAuthToken(token);
+      router.push('/jogo');
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Não foi possível conectar ao servidor.',
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -45,6 +83,9 @@ export default function LoginPage() {
                   type="text"
                   name="name"
                   autoComplete="name"
+                  minLength={2}
+                  maxLength={255}
+                  required
                   className="w-full rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition-colors placeholder:text-white/35 focus:border-primary-cyan"
                   placeholder="Seu nome"
                 />
@@ -57,6 +98,8 @@ export default function LoginPage() {
                 type="email"
                 name="email"
                 autoComplete="email"
+                maxLength={255}
+                required
                 className="w-full rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition-colors placeholder:text-white/35 focus:border-primary-cyan"
                 placeholder="voce@email.com"
               />
@@ -68,6 +111,9 @@ export default function LoginPage() {
                 type="password"
                 name="password"
                 autoComplete={isRegistering ? 'new-password' : 'current-password'}
+                minLength={6}
+                maxLength={72}
+                required
                 className="w-full rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition-colors placeholder:text-white/35 focus:border-primary-cyan"
                 placeholder="Sua senha"
               />
@@ -80,24 +126,45 @@ export default function LoginPage() {
                   type="password"
                   name="confirmPassword"
                   autoComplete="new-password"
+                  minLength={6}
+                  maxLength={72}
+                  required
                   className="w-full rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition-colors placeholder:text-white/35 focus:border-primary-cyan"
                   placeholder="Repita sua senha"
                 />
               </label>
             )}
 
+            {error && (
+              <p
+                role="alert"
+                className="rounded-xl border border-red-400/40 bg-red-500/15 px-4 py-3 text-sm text-red-100"
+              >
+                {error}
+              </p>
+            )}
+
             <button
               type="submit"
-              className="w-full rounded-full bg-primary-cyan px-6 py-3 font-bold text-black shadow-lg transition-all hover:-translate-y-1 hover:shadow-primary-cyan/50"
+              disabled={isSubmitting}
+              className="w-full rounded-full bg-primary-cyan px-6 py-3 font-bold text-black shadow-lg transition-all hover:-translate-y-1 hover:shadow-primary-cyan/50 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
             >
-              {isRegistering ? 'Registrar-se' : 'Entrar'}
+              {isSubmitting
+                ? 'Aguarde...'
+                : isRegistering
+                  ? 'Registrar-se'
+                  : 'Entrar'}
             </button>
           </form>
 
           <div className="mt-6 flex flex-col items-center gap-3 text-center text-sm text-white/75">
             <button
               type="button"
-              onClick={() => setIsRegistering((current) => !current)}
+              onClick={() => {
+                setIsRegistering((current) => !current);
+                setError(null);
+              }}
+              disabled={isSubmitting}
               className="font-bold text-primary-cyan transition-colors hover:text-white"
             >
               {isRegistering

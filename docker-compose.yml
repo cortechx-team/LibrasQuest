@@ -9,6 +9,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: admin
       POSTGRES_DB: librasquest_db
+      POSTGRES_HOST_AUTH_METHOD: trust
     ports:
       - "5432:5432"
     networks:
@@ -33,6 +34,10 @@ services:
       DB_USER: postgres
       DB_PASSWORD: admin
       DATABASE_URL: postgres://postgres:admin@postgres:5432/librasquest_db
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-this-secret-in-production}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-60}
+      FRONTEND_ORIGIN: http://localhost:3000
     ports:
       - "8000:8000"
     networks:
@@ -50,7 +55,8 @@ services:
     container_name: web_librasquest
     restart: always
     environment:
-      - VITE_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_PREDICTION_WS_URL=ws://localhost:8000/ws/predict
     ports:
       - "3000:3000"
     networks:
@@ -64,4 +70,3 @@ networks:
   
 volumes:
   pgdata:
-

@@ -3,9 +3,12 @@ uvicorn[standard]==0.29.0
 alembic==1.13.1
 sqlalchemy==2.0.27
 psycopg2-binary==2.9.9
+pg8000>=1.30.0
 pydantic>=2.7.0
 numpy>=1.26.0
 joblib>=1.4.0
 scikit-learn==1.6.1
 python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+bcrypt==3.2.2
 python-dotenv>=1.0.0
