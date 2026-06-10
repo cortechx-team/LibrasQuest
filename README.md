@@ -68,9 +68,9 @@ The architecture was designed to ensure **low latency** in sign recognition, usi
 
 The `/model` directory contains the core intelligence of LibrasQuest. To reproduce or improve the model:
 
-1.  **Data Collection:** Use [`dataset_tools/collect_data.py`](./dataset_tools/collect_data.py) to capture hand landmarks via webcam.
-2.  **Preprocessing:** Run [`model/notebooks/data_prep.ipynb`](./model/notebooks/data_prep.ipynb) to clean data and generate features (distances and directional differences).
-3.  **Training:** Execute [`model/notebooks/model.ipynb`](./model/notebooks/model.ipynb) to train the Random Forest classifier and export the model.
+1.  **Data Collection:** Use `dataset_tools/collect_data.py` to capture hand landmarks via webcam.
+2.  **Preprocessing:** Run `model/notebooks/data_prep.ipynb` to clean data and generate features (distances and directional differences).
+3.  **Training:** Execute `model/notebooks/model.ipynb` to train the Random Forest classifier and export the model.
 
 ---
 
