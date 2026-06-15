@@ -73,3 +73,19 @@ export function subscribeToAuth(callback: () => void): () => void {
     window.removeEventListener(AUTH_CHANGE_EVENT, callback);
   };
 }
+
+export async function authenticateGuest(): Promise<string> {
+  const response = await fetch(`${getApiUrl()}/auth/guest`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  const data = await response.json() as TokenResponse | ErrorResponse;
+  if (!response.ok) {
+    throw new Error(getErrorMessage(data as ErrorResponse));
+  }
+
+  return (data as TokenResponse).access_token;
+}

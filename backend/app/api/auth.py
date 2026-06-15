@@ -1,3 +1,4 @@
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.core.database import get_db
@@ -36,4 +37,11 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
         )
 
     token = create_access_token({"sub": str(user.id), "email": user.email})
+    return TokenResponse(access_token=token)
+
+
+@router.post("/guest", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+def guest_login():
+    guest_sub = f"guest_{uuid.uuid4()}"
+    token = create_access_token({"sub": guest_sub, "role": "guest"})
     return TokenResponse(access_token=token)

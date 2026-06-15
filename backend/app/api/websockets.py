@@ -1,7 +1,9 @@
 import json
 import logging
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from jose import JWTError
 from pydantic import ValidationError
+from app.core.security import decode_ws_token
 from app.schemas.predict import CoordinatesPayload
 from app.services.inference import inference_service
 
@@ -13,6 +15,26 @@ async def ws_predict(websocket: WebSocket) -> None:
     await websocket.accept()
     client_id = f"{websocket.client.host}:{websocket.client.port}"
     logger.info("Cliente conectado ao canal: %s", client_id)
+
+    token = websocket.query_params.get("token")
+    if not token:
+        logger.warning("Token ausente para o cliente %s. Encerrando conexão.", client_id)
+        await websocket.close(code=4008)
+        return
+
+    try:
+        claims = decode_ws_token(token)
+    except (JWTError, ValueError) as exc:
+        logger.warning("Token inválido para o cliente %s: %s", client_id, exc)
+        await websocket.close(code=4008)
+        return
+
+    logger.info(
+        "Cliente autenticado: %s (sub=%s, role=%s)",
+        client_id,
+        claims.get("sub"),
+        claims.get("role", "user"),
+    )
 
     try:
         while True:
