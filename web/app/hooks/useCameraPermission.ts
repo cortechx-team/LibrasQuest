@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { requestCameraPermission, CameraPermissionStatus } from '../lib/camera/requestCameraPermission';
 
 function stopMediaStream(stream: MediaStream | null) {
@@ -26,7 +26,7 @@ export function useCameraPermission() {
     };
   }, [stream]);
 
-  const requestPermission = async (): Promise<CameraPermissionStatus> => {
+  const requestPermission = useCallback(async (): Promise<CameraPermissionStatus> => {
     setIsLoading(true);
     setError(null);
 
@@ -53,9 +53,9 @@ export function useCameraPermission() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const stopCameraTest = () => {
+  const stopCameraTest = useCallback(() => {
     setStream(currentStream => {
       stopMediaStream(currentStream);
       return null;
@@ -63,7 +63,7 @@ export function useCameraPermission() {
 
     setStatus(null);
     setError(null);
-  };
+  }, []);
 
   return {
     status,

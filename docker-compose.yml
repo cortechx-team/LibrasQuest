@@ -6,9 +6,9 @@ services:
     container_name: db_postgres
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: librasquest_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     networks:
@@ -16,7 +16,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d librasquest_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -29,10 +29,14 @@ services:
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_NAME: librasquest_db
-      DB_USER: postgres
-      DB_PASSWORD: admin
-      DATABASE_URL: postgres://postgres:admin@postgres:5432/librasquest_db
+      DB_NAME: ${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-this-secret-in-production}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-60}
+      FRONTEND_ORIGIN: http://localhost:3000
     ports:
       - "8000:8000"
     networks:
@@ -45,21 +49,18 @@ services:
 
   frontend:
     build:
-      context: ./frontend
-    
+      context: ./web
     container_name: web_librasquest
     restart: always
     environment:
-      - VITE_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_PREDICTION_WS_URL=ws://localhost:8000/ws/predict
     ports:
       - "3000:3000"
     networks:
       - app-network
     depends_on:
       - backend
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules # Pra evitar sobrescrever 
   
 networks:
   app-network:
@@ -67,4 +68,3 @@ networks:
   
 volumes:
   pgdata:
-
