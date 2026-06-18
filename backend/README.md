@@ -13,6 +13,7 @@ backend/
 ├── app/
 │   ├── __init__.py
 │   ├── models.py               # Modelos do banco de dados
+│   ├── seed.py                 # Carga inicial de palavras do jogo
 │   ├── api/
 │   │   ├── __init__.py
 │   │   ├── auth.py             # Endpoints de autenticação (login e cadastro)
@@ -33,7 +34,6 @@ backend/
 │       ├── __init__.py
 │       ├── auth.py             # Regras de negócio de autenticação
 │       └── inference.py        # Camada de Machine Learning (Carregamento e Inferência)
-├── seed.py                     # Carga inicial de palavras do jogo
 ├── .dockerignore               # Arquivos ignorados durante o build da imagem
 ├── Dockerfile                  # Definição da imagem Docker da aplicação
 ├── alembic.ini                 # Configuração do Alembic
