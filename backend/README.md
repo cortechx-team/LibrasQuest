@@ -1,6 +1,6 @@
 # LibrasQuest — Inference API (Módulo WebSocket)
 
-Este módulo da aplicação **LibrasQuest** implementa um endpoint assíncrono via WebSockets utilizando **FastAPI**. Ele foi desenhado para receber fluxos contínuos de coordenadas tridimensionais das mãos (extraídas via MediaPipe Hands diretamente no cliente frontend) e retornar a classificação correspondente do alfabeto em Libras em tempo real com baixíssima latência.
+Este módulo da aplicação **LibrasQuest** implementa a infraestrutura de banco de dados, autenticação de usuários e um endpoint assíncrono via WebSockets utilizando **FastAPI**. Ele foi pensado para gerenciar dados persistentes e receber fluxos contínuos de coordenadas tridimensionais das mãos (extraídas via MediaPipe Hands diretamente no cliente frontend), retornando a classificação correspondente do alfabeto em Libras em tempo real com baixíssima latência.
 
 ## 📁 Estrutura do Escopo do Backend
 
@@ -15,19 +15,25 @@ backend/
 │   ├── models.py               # Modelos do banco de dados
 │   ├── api/
 │   │   ├── __init__.py
+│   │   ├── auth.py             # Endpoints de autenticação (login e cadastro)
 │   │   └── websockets.py       # Endpoint persistente e gestão de fluxo de dados
 │   ├── assets/
 │   │   ├── modelo.pkl          # Classificador scikit-learn treinado (RandomForest)
 │   │   └── standardization_stats.csv # Pesos e métricas de normalização Z-Score
 │   ├── core/
 │   │   ├── __init__.py
-│   │   └── config.py           # Variáveis de ambiente e constantes globais
+│   │   ├── config.py           # Variáveis de ambiente e constantes globais
+│   │   ├── database.py         # Engine, sessões e dependências do banco
+│   │   └── security.py         # Hash de senhas, JWT e validações de segurança
 │   ├── schemas/
 │   │   ├── __init__.py
+│   │   ├── auth.py             # Contratos de autenticação e tokens
 │   │   └── predict.py          # Contratos de dados Pydantic (Validação de Entrada/Saída)
 │   └── services/
 │       ├── __init__.py
+│       ├── auth.py             # Regras de negócio de autenticação
 │       └── inference.py        # Camada de Machine Learning (Carregamento e Inferência)
+├── seed.py                     # Carga inicial de palavras do jogo
 ├── .dockerignore               # Arquivos ignorados durante o build da imagem
 ├── Dockerfile                  # Definição da imagem Docker da aplicação
 ├── alembic.ini                 # Configuração do Alembic
@@ -40,9 +46,46 @@ backend/
 
 * **FastAPI**: Engine assíncrona voltada a endpoints de alto desempenho e WebSockets nativos.
 * **SQLAlchemy & Alembic**: Mapeamento Objeto-Relacional (ORM) e controle de evolução estrutural do banco.
+* **PostgreSQL**: Banco de dados relacional principal da aplicação.
 * **Scikit-Learn (1.6.1)**: Motor preditivo responsável pelo processamento do modelo gerado.
 * **NumPy**: Biblioteca de computação científica utilizada para vetorização acelerada e normalização estatística.
 * **Pydantic**: Camada de parsing e validação de payloads em tempo de execução.
+* **Passlib (bcrypt)**: Algoritmo seguro para hash de senhas.
+* **Python-JOSE (JWT)**: Geração e validação de tokens para autenticação.
+
+## 🔐 Autenticação
+
+O backend utiliza JSON Web Tokens (JWT) para manter as sessões e garantir o acesso seguro aos recursos protegidos. O token JWT contém o identificador e o e-mail do usuário autenticado e possui tempo de expiração configurável por variável de ambiente.
+(Para otimizar a entrega do MVP, o projeto mantém o uso de JWT, porém sem validação dos tokens nesta fase. O controle de acesso e a verificação de identidade são realizados diretamente pela validação de credenciais e integridade dos dados na camada de persistênci)
+
+### Cadastro
+POST /auth/register
+
+{
+  "name": "Fulano",
+  "email": "fulano@email.com",
+  "password": "123456"
+}
+
+Resposta:
+{
+  "access_token": "<jwt>",
+  "token_type": "bearer"
+}
+
+### Login
+POST /auth/login
+
+{
+  "email": "fulano@email.com",
+  "password": "123456"
+}
+
+Resposta:
+{
+  "access_token": "<jwt>",
+  "token_type": "bearer"
+}
 
 ## ⚙️ Arquitetura de Processamento de Sinais
 
@@ -83,6 +126,10 @@ Resposta imediata contendo a caractere mapeado correspondente e o nível de conf
   "confidence": 1.0
 }
 ```
+
+## 🌱 Seed Inicial
+
+O backend disponibiliza um script de seed responsável por popular a tabela de palavras utilizadas pelo jogo. A operação é idempotente, evitando inserções duplicadas através de tratamento de conflitos no banco de dados.
 
 ## 🛠️ Execução do Ecossistema Backend
 
