@@ -7,6 +7,38 @@ import { useCameraPermission } from '../hooks/useCameraPermission';
 import { useHandLandmarker } from '../hooks/useHandLandmarker';
 import { usePredictionSocket } from '../hooks/usePredictionSocket';
 import { drawHandLandmarks } from '../lib/mediapipe/handFeatures';
+import {
+  MINIMUM_PREDICTION_CONFIDENCE,
+  isConfidentPrediction,
+  normalizePredictionLetter,
+} from '../lib/prediction';
+
+function getPredictionStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    idle: 'aguardando',
+    connecting: 'conectando',
+    handshaking: 'validando modelo',
+    connected: 'conectada',
+    disconnected: 'desconectada',
+    error: 'erro',
+  };
+
+  return labels[status] ?? status;
+}
+
+function getInitializationMessage(handTrackingStatus: string, predictionStatus: string): string {
+  if (predictionStatus !== 'connected') {
+    return predictionStatus === 'handshaking'
+      ? 'Validando modelo de reconhecimento...'
+      : 'Conectando ao reconhecimento...';
+  }
+
+  if (handTrackingStatus === 'loading') {
+    return 'Carregando modelo da câmera...';
+  }
+
+  return 'Preparando captura...';
+}
 
 export default function GameplayPage() {
   const { status, isLoading, error, stream, requestPermission } = useCameraPermission();
@@ -27,6 +59,13 @@ export default function GameplayPage() {
     error: predictionError,
     sendFrame,
   } = usePredictionSocket(Boolean(stream));
+  const isModelReady = handTrackingStatus === 'ready' || handTrackingStatus === 'detecting';
+  const isSocketReady = predictionStatus === 'connected';
+  const isConnectionError = predictionStatus === 'error' || handTrackingStatus === 'error';
+  const isInitializing = Boolean(stream) && !isConnectionError && (!isModelReady || !isSocketReady);
+  const recognizedLetter = isConfidentPrediction(prediction)
+    ? normalizePredictionLetter(prediction.letter)
+    : null;
 
   useEffect(() => {
     const confirmed = sessionStorage.getItem('librasquest-camera-confirmed') === 'true';
@@ -132,9 +171,19 @@ export default function GameplayPage() {
                         : 'Mostre uma mão'}
                   </span>
                   <span className="rounded-full border border-white/15 bg-black/65 px-3 py-2">
-                    API: {predictionStatus === 'connected' ? 'conectada' : predictionStatus}
+                    API: {getPredictionStatusLabel(predictionStatus)}
                   </span>
                 </div>
+                {isInitializing && (
+                  <div className="absolute inset-0 grid place-items-center bg-black/65 text-center backdrop-blur-sm">
+                    <div>
+                      <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-primary-cyan/25 border-t-primary-cyan" />
+                      <p className="mt-4 text-lg font-bold text-primary-cyan">
+                        {getInitializationMessage(handTrackingStatus, predictionStatus)}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </>
             ) : (
               <div className="px-6 text-center">
@@ -183,11 +232,13 @@ export default function GameplayPage() {
             <div className="rounded-xl bg-white/10 p-4">
               <p className="text-sm text-white/65">Reconhecimento</p>
               <p className="mt-1 text-3xl font-bold text-primary-cyan">
-                {prediction?.letter ?? '--'}
+                {recognizedLetter ?? '--'}
               </p>
               <p className="mt-2 text-sm text-white/65">
                 {prediction
-                  ? `${Math.round(prediction.confidence * 100)}% de confiança`
+                  ? prediction.confidence >= MINIMUM_PREDICTION_CONFIDENCE
+                    ? `${Math.round(prediction.confidence * 100)}% de confiança`
+                    : 'Nenhuma letra reconhecida'
                   : 'Aguardando sinal'}
               </p>
             </div>

@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.auth import router as auth_router
+from app.api.dictionary import router as dictionary_router
 from app.api.websockets import router as websocket_router
 from app.core.config import FRONTEND_ORIGIN
 from app.services.inference import inference_service
@@ -38,6 +39,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(dictionary_router)
 app.include_router(websocket_router)
 
 

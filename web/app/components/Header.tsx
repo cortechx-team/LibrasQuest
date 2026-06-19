@@ -1,22 +1,56 @@
 'use client';
 
 import Link from 'next/link';
-import { useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { clearAuthToken, getAuthToken, subscribeToAuth } from '../lib/auth';
+
+type HeaderProps = {
+  autoHideOnScroll?: boolean;
+};
 
 /**
  * Componente de Cabeçalho (Header)
  * Responsável pela navegação principal da página de entrada.
  */
-export default function Header() {
+export default function Header({ autoHideOnScroll = false }: HeaderProps) {
   const token = useSyncExternalStore(subscribeToAuth, getAuthToken, () => null);
+  const [isVisible, setIsVisible] = useState(true);
+  const lastScrollYRef = useRef(0);
+
+  useEffect(() => {
+    if (!autoHideOnScroll) {
+      return;
+    }
+
+    lastScrollYRef.current = window.scrollY;
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const isScrollingUp = currentScrollY < lastScrollYRef.current;
+      const isNearTop = currentScrollY < 24;
+
+      const shouldBeVisible = isNearTop || isScrollingUp;
+      setIsVisible((current) => current === shouldBeVisible ? current : shouldBeVisible);
+      lastScrollYRef.current = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [autoHideOnScroll]);
 
   const handleLogout = () => {
     clearAuthToken();
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 flex w-full items-center justify-between bg-bg-dark/90 px-[10%] py-5 backdrop-blur-sm">
+    <header
+      className={`fixed left-0 right-0 top-0 z-50 flex w-full items-center justify-between bg-bg-dark/90 px-[10%] py-5 backdrop-blur-sm transition-transform duration-300 ${
+        !autoHideOnScroll || isVisible ? 'translate-y-0' : '-translate-y-full'
+      }`}
+    >
       {/* Logotipo */}
       <Link href="/" className="text-2xl font-bold text-primary-cyan">
         LibrasQuest

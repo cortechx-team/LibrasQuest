@@ -41,7 +41,9 @@ export default function Hero() {
     const result = await requestPermission();
 
     // Tratar o resultado após a requisição
-    if (result === 'denied') {
+    if (result === 'granted') {
+      handleCameraReady();
+    } else if (result === 'denied') {
       alert('Permissão negada. Para usar o LibrasQuest, você precisa permitir o acesso à câmera');
     } else if (result === 'unsupported') {
       alert('Seu navegador não suporta acesso à câmera ou nenhuma câmera foi encontrada');
@@ -99,6 +101,11 @@ export default function Hero() {
         >
           {isLoading ? 'Aguardando câmera...' : 'Teste sua câmera para começar'}
         </button>
+        {status === 'error' && (
+          <p className="mt-3 max-w-sm rounded-lg border border-red-400/30 bg-red-500/15 px-4 py-3 text-sm text-red-100">
+            Não foi possível acessar a câmera. {error || 'Tente novamente.'}
+          </p>
+        )}
 
         {status === 'granted' && stream && (
           <>
@@ -125,7 +132,7 @@ export default function Hero() {
                   <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary-cyan">Modo de uso</p>
                   <h2 className="mt-3 text-2xl font-bold text-white">Escolha seu modo</h2>
                   <p className="mt-2 text-sm leading-6 text-white/70">
-                    Sua câmera foi confirmada com sucesso. Agora selecione se deseja seguir para o modo Jogo ou o modo Aprendizado.
+                    Sua câmera foi confirmada com sucesso. Agora selecione se deseja seguir para o modo Jogo ou para o Aprendizado.
                   </p>
                   <div className="mt-5 grid gap-3">
                     <button

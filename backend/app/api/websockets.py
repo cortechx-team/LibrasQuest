@@ -13,6 +13,7 @@ async def ws_predict(websocket: WebSocket) -> None:
     await websocket.accept()
     client_id = f"{websocket.client.host}:{websocket.client.port}"
     logger.info("Cliente conectado ao canal: %s", client_id)
+    await websocket.send_json({"type": "ready", "model_loaded": True})
 
     try:
         while True:

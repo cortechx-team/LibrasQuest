@@ -1,3 +1,5 @@
+import { getApiUrl } from './api';
+
 export const AUTH_TOKEN_KEY = 'librasquest_access_token';
 const AUTH_CHANGE_EVENT = 'librasquest-auth-change';
 
@@ -17,12 +19,6 @@ type TokenResponse = {
 type ErrorResponse = {
   detail?: string | Array<{ msg?: string }>;
 };
-
-function getApiUrl(): string {
-  const configuredUrl = process.env.NEXT_PUBLIC_API_URL;
-  const fallbackUrl = `${window.location.protocol}//${window.location.hostname}:8000`;
-  return (configuredUrl ?? fallbackUrl).replace(/\/$/, '');
-}
 
 function getErrorMessage(data: ErrorResponse): string {
   if (typeof data.detail === 'string') {

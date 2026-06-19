@@ -3,12 +3,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { HandPredictionPayload } from '../lib/mediapipe/handFeatures';
 
-type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'disconnected' | 'error';
+type ConnectionStatus = 'idle' | 'connecting' | 'handshaking' | 'connected' | 'disconnected' | 'error';
 
-type Prediction = {
+export type Prediction = {
   letter: string;
   confidence: number;
 };
+
+type ReadyMessage = {
+  type: 'ready';
+  model_loaded: boolean;
+};
+
+function isReadyMessage(data: Prediction | ReadyMessage | { error: string }): data is ReadyMessage {
+  return 'type' in data && data.type === 'ready';
+}
 
 function getPredictionSocketUrl(): string {
   const configuredUrl = process.env.NEXT_PUBLIC_PREDICTION_WS_URL;
@@ -18,12 +27,21 @@ function getPredictionSocketUrl(): string {
   ).toString();
 }
 
-export function usePredictionSocket(enabled: boolean) {
+export function usePredictionSocket(
+  enabled: boolean,
+  onPrediction?: (prediction: Prediction) => void,
+) {
   const [status, setStatus] = useState<ConnectionStatus>('idle');
   const [prediction, setPrediction] = useState<Prediction | null>(null);
   const [error, setError] = useState<string | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
+  const onPredictionRef = useRef(onPrediction);
+  const isReadyRef = useRef(false);
   const waitingForResponseRef = useRef(false);
+
+  useEffect(() => {
+    onPredictionRef.current = onPrediction;
+  }, [onPrediction]);
 
   useEffect(() => {
     if (!enabled) {
@@ -33,12 +51,13 @@ export function usePredictionSocket(enabled: boolean) {
     let active = true;
     const socket = new WebSocket(getPredictionSocketUrl());
     socketRef.current = socket;
+    isReadyRef.current = false;
 
     socket.addEventListener('open', () => {
       if (!active) {
         return;
       }
-      setStatus('connected');
+      setStatus('handshaking');
       setError(null);
     });
 
@@ -49,13 +68,21 @@ export function usePredictionSocket(enabled: boolean) {
       waitingForResponseRef.current = false;
 
       try {
-        const data = JSON.parse(event.data) as Prediction | { error: string };
+        const data = JSON.parse(event.data) as Prediction | ReadyMessage | { error: string };
         if ('error' in data) {
           setError(data.error);
           return;
         }
 
+        if (isReadyMessage(data)) {
+          isReadyRef.current = data.model_loaded;
+          setStatus(data.model_loaded ? 'connected' : 'handshaking');
+          setError(null);
+          return;
+        }
+
         setPrediction(data);
+        onPredictionRef.current?.(data);
         setError(null);
       } catch {
         setError('O backend retornou uma resposta inválida.');
@@ -67,6 +94,7 @@ export function usePredictionSocket(enabled: boolean) {
         return;
       }
       waitingForResponseRef.current = false;
+      isReadyRef.current = false;
       setStatus('error');
       setError('Não foi possível conectar ao serviço de reconhecimento.');
     });
@@ -76,12 +104,14 @@ export function usePredictionSocket(enabled: boolean) {
         return;
       }
       waitingForResponseRef.current = false;
+      isReadyRef.current = false;
       setStatus((currentStatus) => currentStatus === 'error' ? 'error' : 'disconnected');
     });
 
     return () => {
       active = false;
       socketRef.current = null;
+      isReadyRef.current = false;
       waitingForResponseRef.current = false;
       socket.close();
     };
@@ -92,6 +122,7 @@ export function usePredictionSocket(enabled: boolean) {
     if (
       !socket ||
       socket.readyState !== WebSocket.OPEN ||
+      !isReadyRef.current ||
       waitingForResponseRef.current
     ) {
       return;
